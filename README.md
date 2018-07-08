@@ -24,5 +24,5 @@ The basic statistic functions are also included:
 - Variance
 - StdDev
 
-Chart library: [dygraphs](https://github.com/danvk/dygraphs)
+Chart library: [dygraphs](https://github.com/danvk/dygraphs)  
 Background: [particles.js](https://github.com/VincentGarreau/particles.js/)
