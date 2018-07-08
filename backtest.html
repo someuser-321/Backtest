@@ -1,0 +1,67 @@
+<html>
+<head>
+	<title>Strategy Backtesting</title>
+	
+	<script type="text/javascript" src="js/jquery-1.11.1.min.js"></script>
+	<script type="text/javascript" src="js/dygraph.min.js"></script>
+	<script type="text/javascript" src="js/particles.min.js"></script>
+	<script type="text/javascript" src="js/loadParticles.js"></script>
+	<script type="text/javascript" src="js/backtest.js"></script>
+	
+	<link rel="shortcut icon" type="image/png" href="img/favicon.png""/>
+	<link rel="stylesheet" href="css/main.css" />
+</head>
+<body>
+	<div id="divParticles"></div>
+
+	<div id="divChartContainer" class="fileInput">
+		<div id="divChart"></div>
+		<label id="lblFileInput" for="inpUploadDataset">
+			<div>Upload Dataset</div>
+			<input id="inpUploadDataset" type="file" style="display: none;"/>
+		</label>
+	</div>
+	
+	<div id="divInputs">
+		<div id="divStrategyHeader">
+			<label>Strategy</label>
+			<button id="btnReset" class="fileInput" style="display: none;">Reset</button>
+			<button id="btnBacktest" class="fileInput">Go</button>
+		</div>
+        <div id="divResults">
+            <label>Benchmark Return:</label><span id="txtBenchmarkReturn"></span><label>%</label>
+            <label>Strategy Return:</label><span id="txtStrategyReturn"></span><label>%</label>
+            <label>Excess Return:</label><span id="txtExcessReturn"></span><label>%</label>
+            <label>Benchmark CAGR:</label><span id="txtBenchmarkCAGR"></span><label>%/yr</label>
+            <label>Strategy CAGR:</label><span id="txtStrategyCAGR"></span><label>%/yr</label>
+            <label>Excess CAGR:</label><span id="txtExcessCAGR"></span><label>%/yr</label>
+        </div>
+        <div id="divParameters">
+            <div id="divInit">
+                <label>Initialisation</label>
+                <textarea id="txtInit"></textArea>
+            </div>
+            <div id="divStep">
+                <label>Step</label>
+                <textarea id="txtStep"></textArea>
+            </div>
+            <div id="divEnterLong">
+                <label>Enter Long</label>
+                <textarea id="txtEnterLong"></textArea>
+            </div>
+            <div id="divExitLong">
+                <label>Exit Long</label>
+                <textarea id="txtExitLong"></textArea>
+            </div>
+            <div id="divEnterShort">
+                <label>Enter Short</label>
+                <textarea id="txtEnterShort"></textArea>
+            </div>
+            <div id="divExitShort">
+                <label>Exit Short</label>
+                <textarea id="txtExitShort"></textArea>
+            </div>
+        </div>
+	</div>
+</body>
+</html>
