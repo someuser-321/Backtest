@@ -15,7 +15,9 @@ const calculateSum = (values) => values.reduce((x, y) => x + y, 0),
 	  	  }
 	  	  
 	  	  return statSeries;
-	  };
+	  },
+	  calculateMax = (values) => Math.max(...values),
+	  calculateMin = (values) => Math.min(...values);
 	
 const calculateSMASeries = (values, period) => calculateStatSeries(values, period, calculateMean),
 	  calculateStddevSeries = (values, period) => calculateStatSeries(values, period, calculateStddev);
@@ -32,17 +34,17 @@ const Strategy = (data, parameters, strategy) =>
     
     state.GetPrices = (period, offset = 0) =>
     {
-        const startIdx = Math.max(state.idx - (period - 1) + offset, 0),
-              endIdx = Math.max(state.idx + 1 + offset, 0);
+        const startIdx = Math.max(state.idx - period - offset, 0),
+              endIdx = Math.max(state.idx - offset, 0);
               
         return state.prices.slice(startIdx, endIdx);
     };
-    
+	
     state.GetPrice = (offset) => state.GetPrices(1, offset)[0];
     
     state.SMA = (period, offset) => calculateMean(state.GetPrices(period, offset));
 	
-	state.EMA = (period, offset, alpha = 1 / period) =>  state.EMA_(state.GetPrices(period, offset), alpha);
+	state.EMA = (period, offset, alpha = 1 / period) => state.EMA_(state.GetPrices(period, offset), alpha);
 	
 	state.EMA_ = (prices, alpha = 1 / prices.length) => alpha * prices.reduce((acc, e, i) => acc + e * (1 - alpha) ** (prices.length - 1 - i), 0);
     
@@ -83,7 +85,8 @@ const Strategy = (data, parameters, strategy) =>
 	state.shortPositions = [state.shortPosition];
 	state.positionEntryPrice = null,
     state.maxPriceDuringPosition = 0;
-    state.idx = 0;
+    state.idx = 1;
+	
 	state._series = {
 		OpenPrice: {
 			label: "Open Price (USD)",
@@ -274,14 +277,33 @@ const scoreResults = (results) =>
 	
 	const excessReturn = (totalReturn / benchmarkReturn) - 1,
 		  excessCAGR = (1 + excessReturn) ** (1 / (balances.length / (365 * 24))) - 1;
+		  
+	const winningTrades = [],
+		  losingTrades = [];
+		  
+	
+		  
+	// Trades won/lost
+	// Mean profit/loss
+	// Median profit/loss
+	// Max profit/loss
+	// Max drawdown
+	// Mean time in position
+	// Median time in position
 	
 	let timesInPosition = [],
-		currentTimeInPosition = 0;
+		currentTimeInPosition = 0,
+		entryBalance = 0;
 		
 	for (let i = 0; i < longPositions.length; i++)
 	{
 		if (longPositions[i] > 0)
 		{
+			if (entryBalance === 0)
+			{
+				entryBalance = balances[i];
+			}
+			
 			currentTimeInPosition++;
 		}
 		else
@@ -290,6 +312,14 @@ const scoreResults = (results) =>
 			{
 				timesInPosition.push(currentTimeInPosition);
 			}
+			if (entryBalance > 0)
+			{				
+				const tradeReturn = (balances[i] - entryBalance) / entryBalance;
+				(tradeReturn > 0 ? winningTrades : losingTrades).push(tradeReturn);
+			
+				entryBalance = 0;
+			}
+			
 			currentTimeInPosition = 0;
 		}
 	}
@@ -297,16 +327,33 @@ const scoreResults = (results) =>
 	const medianTimeInPosition = calculateMedian(timesInPosition),
 		  meanTimeInPosition = calculateMean(timesInPosition);
 		  
+	const tradesWon = winningTrades.length,
+		  meanProfit = calculateMean(winningTrades),
+		  meanLoss = calculateMean(losingTrades),
+		  medianProfit = calculateMedian(winningTrades),
+		  tradesLost = losingTrades.length,
+		  medianLoss = calculateMedian(losingTrades),
+		  maxProfit = calculateMax(winningTrades),
+		  maxLoss = calculateMin(losingTrades);
+		  
 	const scores = {
-		benchmarkReturn: benchmarkReturn,
-		benchmarkCAGR: benchmarkCAGR,
-		totalReturn: totalReturn,
-		totalCAGR: totalCAGR,
-		excessReturn: excessReturn,
-		excessCAGR: excessCAGR,
-		maxDrawdown: maxDrawdown,
-		medianTimeInPosition: medianTimeInPosition,
-		meanTimeInPosition: meanTimeInPosition
+		benchmarkReturn,
+		benchmarkCAGR,
+		totalReturn,
+		totalCAGR,
+		excessReturn,
+		excessCAGR,
+		maxDrawdown,
+		medianTimeInPosition,
+		meanTimeInPosition,
+		tradesWon,
+		tradesLost,
+		meanProfit,
+		medianProfit,
+		maxProfit,
+		meanLoss,
+		medianLoss,
+		maxLoss
 	};
 	
 	console.log(scores);
@@ -349,7 +396,15 @@ const showResultsStats = (statistics) =>
           $txtStrategyReturn = $("#txtStrategyReturn"),
           $txtStrategyCAGR = $("#txtStrategyCAGR"),
           $txtExcessReturn = $("#txtExcessReturn"),
-          $txtExcessCAGR = $("#txtExcessCAGR");
+          $txtExcessCAGR = $("#txtExcessCAGR"),
+          $txtTradesWon = $("#txtTradesWon"),
+          $txtMeanWinningTradeReturn = $("#txtMeanWinningTradeReturn"),
+          $txtMedianWinningTradeReturn = $("#txtMedianWinningTradeReturn"),
+          $txtMaxWinningTradeReturn = $("#txtMaxWinningTradeReturn"),
+          $txtTradesLost = $("#txtTradesLost"),
+          $txtMeanLosingTradeReturn = $("#txtMeanLosingTradeReturn"),
+          $txtMedianLosingTradeReturn = $("#txtMedianLosingTradeReturn"),
+          $txtMaxLosingTradeReturn = $("#txtMaxLosingTradeReturn");
     
     $txtBenchmarkReturn.text(statistics.benchmarkReturn.toFixed(2));
     $txtBenchmarkCAGR.text(statistics.benchmarkCAGR.toFixed(2));
@@ -357,6 +412,16 @@ const showResultsStats = (statistics) =>
     $txtStrategyCAGR.text((statistics.benchmarkCAGR + statistics.excessCAGR).toFixed(2));
     $txtExcessReturn.text(statistics.excessReturn.toFixed(2));
     $txtExcessCAGR.text(statistics.excessCAGR.toFixed(2));
+	
+	$txtTradesWon.text(statistics.tradesWon / 100);
+    $txtMeanWinningTradeReturn.text(statistics.meanProfit.toFixed(2));
+    $txtMedianWinningTradeReturn.text(statistics.medianProfit.toFixed(2));
+    $txtMaxWinningTradeReturn.text(statistics.maxProfit.toFixed(2));
+	
+	$txtTradesLost.text(statistics.tradesLost / 100);
+    $txtMeanLosingTradeReturn.text(statistics.meanLoss.toFixed(2));
+    $txtMedianLosingTradeReturn.text(statistics.medianLoss.toFixed(2));
+    $txtMaxLosingTradeReturn.text(statistics.maxLoss.toFixed(2));
 }
 
 const showResults = (res) =>
@@ -422,6 +487,18 @@ const showResults = (res) =>
 	
 	new Dygraph($divChart[0], data, options);
     
+	var $legend = $(".dygraph-legend");
+	$legend.css("left", "unset");
+	$legend.mouseover((evt) => {
+		if ($legend.css("left") === "65px") {
+			$legend.css("left", "unset");
+			$legend.css("right", "10px");
+		} else {
+			$legend.css("right", "unset");
+			$legend.css("left", "65px");
+		}
+	});
+	
     showResultsStats(res.statistics);
 };
 
